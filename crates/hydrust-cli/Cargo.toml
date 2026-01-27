@@ -1,0 +1,10 @@
+[package]
+name = "hydrust-cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hydrust-core = { path = "../hydrust-core" }
+tokio.workspace = true
+clap = { version = "4.4", features = ["derive"] } # For beautiful CLI arguments
+indicatif = "0.18" # For the download progress bars

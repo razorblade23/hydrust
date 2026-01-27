@@ -1,0 +1,14 @@
+[package]
+name = "hydrust-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tokio.workspace = true
+wasmtime.workspace = true
+anyhow.workspace = true
+# Media handling
+gstreamer = "0.24"
+gstreamer-app = "0.24"
+# DRM logic (Add this later when you start on Widevine)
+# rswidevine = "0.1"

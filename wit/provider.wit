@@ -1,0 +1,40 @@
+package hydrust:protocol;
+
+/// Types shared between the Host and the Plugins
+interface types {
+    record stream-info {
+        title: string,
+        url: string,
+        /// Optional: quality levels or subtitles could go here
+    }
+
+    enum error-code {
+        network-error,
+        parsing-error,
+        auth-required,
+        content-restricted
+    }
+}
+
+/// Functions that the HOST (Core) provides to the Plugin
+interface host-imports {
+    use types.{error-code};
+
+    /// Plugins use this to ask the Core to fetch data (handling cookies/headers)
+    fetch-url: func(url: string) -> result<string, error-code>;
+    
+    /// Plugins use this to log messages to the Hydrust console
+    log: func(level: string, message: string);
+}
+
+/// Functions that the PLUGIN (Guest) must provide to the Core
+world site-provider {
+    import host-imports;
+    use types.{stream-info, error-code};
+
+    /// The Core calls this to check if a plugin handles a specific URL
+    export can-handle: func(url: string) -> bool;
+
+    /// The Core calls this to get the final manifest link
+    export get-stream: func(url: string) -> result<stream-info, error-code>;
+}

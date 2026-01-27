@@ -1,0 +1,10 @@
+[package]
+name = "hydrust-sdk"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wit-bindgen.workspace = true
+serde.workspace = true
+# We use 'scraper' for HTML parsing inside WASM
+scraper = "0.25"

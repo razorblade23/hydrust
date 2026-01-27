@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/hydrust-cli",
+    "crates/hydrust-core",
+    "crates/hydrust-sdk",
+]
+exclude = ["plugins/mock-provider"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["razorblade23 <contact@razorblade23.dev>"]
+license = "MIT"
+repository = "https://github.com/razorblade23/hydrust"
+
+
+[workspace.dependencies]
+# Common dependencies shared across the project
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+wasmtime = { version = "41.0", features = ["component-model", "async"] }
+wit-bindgen = { version = "0.51.0", features = ["realloc"]}
+log = "0.4"
