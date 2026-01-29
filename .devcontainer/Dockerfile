@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bookworm
+FROM mcr.microsoft.com/devcontainers/rust:2.0.7-1-bookworm
 
 # Install GStreamer and build dependencies
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \

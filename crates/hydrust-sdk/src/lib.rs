@@ -1,39 +1,58 @@
 pub use wit_bindgen;
 
-// The generated code often looks for 'wit_bindgen::rt'
-// We make sure 'hydrust_sdk::rt' exists and points to the right place.
 pub mod rt {
     pub use wit_bindgen::rt::*;
 }
 
+// 1. Generate the bindings inside the SDK crate
+wit_bindgen::generate!({
+    path: "../../wit", 
+    world: "site-provider",
+    runtime_path: "crate::rt",
+});
+
+
+// The generated path follows the package name: hydrust:protocol -> crate::hydrust::protocol
+pub mod events {
+    pub use crate::hydrust::protocol::events::*;
+}
+
+pub mod types {
+    pub use crate::hydrust::protocol::types::*;
+}
+
+/// The trait that every Hydrust extension must implement.
+pub trait Handler {
+    fn on_event(&self, event: events::Event);
+}
+
+// 3. The macro now just handles the boilerplate of the 'Guest' trait
 #[macro_export]
 macro_rules! register_plugin {
     ($plugin_type:ident) => {
-        // THE FIX: 'extern crate' allows us to alias a dependency crate 
-        // as a different name in the root of the current crate.
-        // This makes '::wit_bindgen' point to 'hydrust_sdk' globally in this plugin.
+        // We still need the alias for wit-bindgen internal macros
         extern crate hydrust_sdk as wit_bindgen;
 
-        // We call generate! through our alias
-        wit_bindgen::wit_bindgen::generate!({
-            inline: "
-                package hydrust:protocol;
-                interface types {
-                    record stream-info { title: string, url: string }
-                    enum error-code { network-error, invalid-url, other }
-                }
-                world site-provider {
-                    use types.{stream-info, error-code};
-                    export can-handle: func(url: string) -> bool;
-                    export get-stream: func(url: string) -> result<stream-info, error-code>;
-                }
-            ",
-            world: "site-provider",
-            // We tell it the runtime is available via 'wit_bindgen'
-            // (which now points to 'hydrust_sdk' via our extern crate alias)
-            runtime_path: "wit_bindgen::rt",
-        });
+        struct GuestImpl;
 
-        export!($plugin_type);
+        impl $crate::exports::hydrust::protocol::site_provider::Guest for GuestImpl {
+            fn on_event(event: $crate::events::Event) {
+                // Instantiate the user's handler and pass the event
+                let plugin = $plugin_type;
+                plugin.on_event(event);
+            }
+        }
+
+        $crate::export!(GuestImpl);
     };
+}
+
+/// Helper to publish events back to the Host
+pub fn send_event(id: String, payload: events::EventPayload) {
+    crate::publish(&events::Event {
+        id,
+        origin: "plugin".into(),
+        timestamp: 0, // Host can fill this on arrival
+        payload,
+    });
 }

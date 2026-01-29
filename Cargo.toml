@@ -5,7 +5,7 @@ members = [
     "crates/hydrust-core",
     "crates/hydrust-sdk",
 ]
-exclude = ["plugins/mock-provider"]
+exclude = ["plugins/mock-provider", "plugins/mock-yt"]
 
 [workspace.package]
 version = "0.1.0"

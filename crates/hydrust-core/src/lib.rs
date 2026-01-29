@@ -1,59 +1,40 @@
-use wasmtime::component::bindgen;
-use wasmtime::{Config, Engine, Store, component::{Component, Linker}};
+pub mod engine;
+pub mod services;
 
-// 1. Keep your bindgen macro
-bindgen!({
+// 1. Generate the Host bindings from WIT
+// We use the same WIT file, but we are the HOST now.
+wit_bindgen::generate!({
+    path: "../../wit",
     world: "site-provider",
-    path: "../../wit/provider.wit",
-    async: true,
+    // This tells bindgen we are implementing the host side
+    runtime_path: "wit_bindgen::rt", 
 });
 
-// 2. Define the state that the Host will maintain
-struct MyHostState;
-
-// 3. Implement the imported functions (log, fetch-url) defined in WIT
-#[async_trait::async_trait]
-impl host_imports::Host for MyHostState {
-    async fn fetch_url(&mut self, url: String) -> Result<Result<String, types::ErrorCode>, anyhow::Error> {
-        println!("Host: Plugin requested URL: {}", url);
-        // For now, return a placeholder or use reqwest here later
-        Ok(Ok(format!("<html>Contents of {}</html>", url)))
-    }
-
-    async fn log(&mut self, level: String, message: String) -> Result<(), anyhow::Error> {
-        println!("[PLUGIN {}]: {}", level, message);
-        Ok(())
-    }
+// 2. Create the 'events' module by re-exporting generated types
+// This fixes "file not found for module events"
+pub mod events {
+    // Re-export the types so we can access them as crate::events::Event
+    pub use crate::hydrust::protocol::events::*;
+    
+    // Also re-export the Payload/Event variants for easier access
+    pub use crate::hydrust::protocol::events::EventPayload as Payload;
+    pub use crate::hydrust::protocol::events::PluginEvent;
+    pub use crate::hydrust::protocol::events::CoreEvent;
+    pub use crate::hydrust::protocol::events::ServiceEvent;
 }
 
-pub async fn run_plugin(wasm_path: &str, target_url: &str) -> anyhow::Result<()> {
-    let mut config = Config::new();
-    config.wasm_component_model(true);
-    config.async_support(true);
+use tokio::sync::mpsc;
+use engine::{HydrustEngine, bus::EventBus};
+
+pub async fn start_engine() -> anyhow::Result<()> {
+    let (mut bus, bus_tx) = EventBus::new();
     
-    let engine = Engine::new(&config)?;
-    // Use our state here
-    let mut store = Store::new(&engine, MyHostState); 
-    let component = Component::from_file(&engine, wasm_path)?;
+    // Explicitly define the channel type to help Rust inference
+    let mut engine = HydrustEngine::new(bus_tx);
 
-    let mut linker = Linker::new(&engine);
-    
-    // THIS IS THE KEY PART: Tell the linker how to provide 'host-imports'
-    SiteProvider::add_to_linker(&mut linker, |state: &mut MyHostState| state)?;
+    println!("🚀 Hydrust Core Started. Waiting for events...");
 
-    let (instance, _) = SiteProvider::instantiate_async(&mut store, &component, &linker).await?;
-
-    // Calling the exports (can-handle, get-stream)
-    let can_handle = instance.call_can_handle(&mut store, target_url).await?;
-    println!("Plugin can handle URL: {}", can_handle);
-
-    if can_handle {
-        let result = instance.call_get_stream(&mut store, target_url).await?;
-        match result {
-            Ok(info) => println!("Found Stream! Title: {} | URL: {}", info.title, info.url),
-            Err(e) => println!("Plugin error: {:?}", e),
-        }
-    }
+    bus.run(&mut engine).await;
 
     Ok(())
 }

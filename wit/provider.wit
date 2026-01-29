@@ -1,40 +1,80 @@
-package hydrust:protocol;
+package hydrust:protocol@0.1.0;
 
-/// Types shared between the Host and the Plugins
 interface types {
     record stream-info {
         title: string,
-        url: string,
-        /// Optional: quality levels or subtitles could go here
+        video-url: string,
+        audio-url: option<string>,
     }
 
-    enum error-code {
-        network-error,
-        parsing-error,
-        auth-required,
-        content-restricted
+    record browser-request {
+        title: string,
+        video-url: string,
+        audio-url: option<string>,
+    }
+
+    record error-code {
+        title: string,
+        video-url: string,
+        audio-url: option<string>,
     }
 }
 
-/// Functions that the HOST (Core) provides to the Plugin
-interface host-imports {
-    use types.{error-code};
+interface events {
+    use types.{stream-info, browser-request, error-code};
 
-    /// Plugins use this to ask the Core to fetch data (handling cookies/headers)
-    fetch-url: func(url: string) -> result<string, error-code>;
-    
-    /// Plugins use this to log messages to the Hydrust console
-    log: func(level: string, message: string);
+    /// --- PLUGIN NAMESPACE ---
+    /// Events sent by the WASM Extension to the Core
+    variant plugin-event {
+        /// "I can handle this URL"
+        identified(string),
+        /// "I need the browser to sniff a pattern"
+        request-browser(browser-request),
+        /// "I need the user to solve a captcha"
+        request-captcha(string), 
+        /// "Here is the final stream data"
+        result-ready(stream-info),
+        /// "Something went wrong in the logic"
+        error(error-code),
+    }
+
+    /// --- CORE NAMESPACE ---
+    /// Events sent by the Engine/Services to the Plugins
+    variant core-event {
+        /// "Does anyone support this URL?"
+        intent-resolve(string),
+        /// "The browser found the data you requested"
+        browser-observed(string),
+        /// "The captcha has been solved"
+        captcha-solved(string),
+    }
+
+    /// --- SERVICE NAMESPACE ---
+    /// Global signals about the internal engine state
+    variant service-event {
+        /// "Muxing progress update"
+        media-progress(f32),
+        /// "The file is finished and saved"
+        media-complete(string),
+    }
+
+    /// The Unified Event Wrapper
+    record event {
+        id: string,         // Trace ID (UUID)
+        origin: string,     // Name of the sender
+        timestamp: u64,
+        payload: event-payload,
+    }
+
+    variant event-payload {
+        plugin(plugin-event),
+        core(core-event),
+        service(service-event),
+    }
 }
 
-/// Functions that the PLUGIN (Guest) must provide to the Core
 world site-provider {
-    import host-imports;
-    use types.{stream-info, error-code};
-
-    /// The Core calls this to check if a plugin handles a specific URL
-    export can-handle: func(url: string) -> bool;
-
-    /// The Core calls this to get the final manifest link
-    export get-stream: func(url: string) -> result<stream-info, error-code>;
+    use events.{event};
+    import publish: func(ev: event);
+    export on-event: func(ev: event);
 }
