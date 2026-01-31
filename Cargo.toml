@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/hydrust-cli",
+    "crates/hydrust-tui",
     "crates/hydrust-core",
     "crates/hydrust-sdk",
 ]

@@ -1,0 +1,9 @@
+[package]
+name = "hydrust-tui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hydrust-core = { path = "../hydrust-core" }
+tokio.workspace = true
+ratatui = "0.30.0"
