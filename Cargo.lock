@@ -1002,8 +1002,10 @@ dependencies = [
  "anyhow",
  "gstreamer",
  "gstreamer-app",
+ "log",
  "tokio",
  "wasmtime",
+ "wit-bindgen",
 ]
 
 [[package]]

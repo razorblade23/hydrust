@@ -7,6 +7,9 @@ edition.workspace = true
 tokio.workspace = true
 wasmtime.workspace = true
 anyhow.workspace = true
+log.workspace = true
+wit-bindgen.workspace = true
+
 # Media handling
 gstreamer = "0.24"
 gstreamer-app = "0.24"
