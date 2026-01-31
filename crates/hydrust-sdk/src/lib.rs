@@ -11,7 +11,7 @@ wit_bindgen::generate!({
     world: "site-provider",
     runtime_path: "crate::rt",
     // We don't want to define the export logic here, just the types
-    export_macro_name: "export_internal", 
+    export_macro_name: "export_sdk_internal", 
 });
 
 pub mod events {
@@ -29,12 +29,11 @@ macro_rules! register_plugin {
         $crate::wit_bindgen::generate!({
             path: "../../wit", // Note: This path must be reachable by the user crate
             world: "site-provider",
-            runtime_path: "$crate::rt",
         });
 
         struct GuestImpl;
 
-        impl exports::hydrust::protocol::site_provider::Guest for GuestImpl {
+        impl self::exports::hydrust::protocol::site_provider::Guest for GuestImpl {
             fn on_event(event: $crate::events::Event) {
                 // Assuming $plugin_type can be instantiated or is a global
                 let plugin = <$plugin_type as Default>::default();

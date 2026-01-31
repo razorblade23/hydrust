@@ -1,9 +1,9 @@
-use hydrust_sdk::{register_plugin, Handler, events::*, types::*};
+use hydrust_sdk::{register_plugin, Handler, events::*};
 
 struct YoutubePlugin;
 
 impl Handler for YoutubePlugin {
-    fn on_event(&self, ev: Event) {
+    fn on_event(&self, ev: hydrust_sdk::events::Event) {
         // Trace ID is preserved throughout the conversation
         let trace_id = ev.id.clone();
 
