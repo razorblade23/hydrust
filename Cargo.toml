@@ -24,3 +24,9 @@ serde_json = "1.0"
 wasmtime = { version = "41.0", features = ["component-model", "async"] }
 wit-bindgen = { version = "0.51.0", features = ["realloc"]}
 log = "0.4"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

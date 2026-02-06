@@ -11,7 +11,8 @@
                 "fill-labs.dependi",
                 "vadimcn.vscode-lldb",
                 "webassembly.wasm-extension",
-                "bytecodealliance.wit-idl"
+                "bytecodealliance.wit-idl",
+                "nefrob.vscode-just-syntax"
             ]
         }
     },

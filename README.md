@@ -5,7 +5,7 @@
 ---
 
 > [!WARNING]
-> This is a work in progress and for now only a placeholder on name for now.
+> This is a work in progress and for now only a placeholder on name.
 
 ## 🚀 What is Hydrust?
 

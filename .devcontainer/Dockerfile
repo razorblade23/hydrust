@@ -18,3 +18,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 # This ensures we get the right binary for the architecture
 USER vscode
 RUN cargo install cargo-component --locked
+
+RUN cargo install just-lsp
+RUN cargo install just

@@ -73,8 +73,22 @@ interface events {
     }
 }
 
+interface metadata {
+    record plugin-info {
+        name: string,
+        version: string,
+        author: option<string>,
+        description: option<string>,
+    }
+}
+
 world site-provider {
+    use metadata.{plugin-info};
     use events.{event};
+
+    // Plugin must provide this information
+    export get-info: func() -> plugin-info;
+
     import publish: func(ev: event);
     export on-event: func(ev: event);
 }

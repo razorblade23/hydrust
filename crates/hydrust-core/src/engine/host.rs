@@ -6,7 +6,7 @@ pub struct MyHostState {
     pub event_bus_tx: mpsc::Sender<Event>,
 }
 
-impl crate::bindings::hydrust::protocol:: for MyHostState {
+impl crate::bindings::hydrust::protocol for MyHostState {
     fn publish(&mut self, ev: Event) -> anyhow::Result<()> {
         let mut event_to_route = ev;
         event_to_route.origin = "plugin".to_string(); 

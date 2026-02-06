@@ -31,11 +31,16 @@ pub mod types {
     pub use crate::bindings::hydrust::protocol::types::*;
 }
 
+pub mod metadata {
+    pub use crate::bindings::hydrust::protocol::metadata::*;
+}
+
 pub use bindings::publish;
 
 // --- USER FACING MACRO ---
 
 pub trait Handler {
+    fn metadata(&self) -> metadata::PluginInfo;
     fn on_event(&self, event: events::Event);
 }
 
@@ -45,6 +50,11 @@ macro_rules! register_plugin {
         struct GuestImpl;
 
         impl $crate::Guest for GuestImpl {
+            fn get_info() -> $crate::metadata::PluginInfo {
+                let plugin: $plugin_type = Default::default();
+                $crate::Handler::metadata(&plugin)
+            }
+
             fn on_event(event: $crate::events::Event) {
                 let plugin: $plugin_type = Default::default();
                 $crate::Handler::on_event(&plugin, event);
