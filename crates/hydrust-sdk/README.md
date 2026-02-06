@@ -38,8 +38,8 @@ impl Handler for MyPlugin {
         PluginInfo {
             name: "My Plugin".to_string(),
             version: "0.1.0".to_string(),
-            author: Some("MyName".to_string()),
-            description: Some("My plugin does wonders".to_string())
+            author: "MyName".to_string(),
+            description: "My plugin does wonders".to_string()
         }
     }
 
