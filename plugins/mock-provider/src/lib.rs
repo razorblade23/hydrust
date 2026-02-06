@@ -1,18 +1,23 @@
-use hydrust_sdk::register_plugin;
+use hydrust_sdk::{register_plugin, Handler};
+use hydrust_sdk::events::Event;
+use hydrust_sdk::metadata::PluginInfo;
 
-register_plugin!(MockPlugin);
+#[derive(Default)]
+struct MyPlugin;
 
-struct MockPlugin;
-
-impl Guest for MockPlugin {
-    fn can_handle(url: String) -> bool {
-        url.contains("example.com")
+impl Handler for MyPlugin {
+    fn metadata(&self) -> PluginInfo {
+        PluginInfo {
+            name: "My Plugin".to_string(),
+            version: "0.1.0".to_string(),
+            author: "razorblade23".to_string(),
+            description: "My plugin does wonders".to_string()
+        }
     }
 
-    fn get_stream(_url: String) -> Result<StreamInfo, ErrorCode> {
-        Ok(StreamInfo {
-            title: "Hydrust Mock Stream".to_string(),
-            url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8".to_string(),
-        })
+    fn on_event(&self, event: Event) {
+        // Handle event logic here
     }
 }
+
+register_plugin!(MyPlugin);

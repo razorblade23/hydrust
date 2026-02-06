@@ -1,11 +1,11 @@
-# 💧 Hydrust SDK
+# Hydrust SDK
 The *official* Software Development Kit for building **Hydrust** WASM plugins.
 
 Hydrust is a high-performance, plugin-based media framework. This SDK allows you to build site-specific logic (URL parsing, metadata extraction, stream discovery) that runs in a secure, sandboxed WebAssembly environment.
 
-## 🚀 Quick Start
-1. Create a new project
-Plugins must be compiled as WebAssembly components.
+## Quick Start
+1. Create a new project.
+> Plugins must be compiled as WebAssembly components.
 ```bash
 cargo new --lib my-hydrust-plugin
 cd my-hydrust-plugin
@@ -23,37 +23,32 @@ hydrust-sdk = "0.1.0"
 ```
 
 3. Implement the Plugin
-Edit src/lib.rs to handle events from the Hydrust Core:
+Edit *src/lib.rs* to handle events from the Hydrust Core:
 
 ```rust
-use hydrust_sdk::{register_plugin, Handler, events::*, metadata::PluginInfo};
+use hydrust_sdk::{register_plugin, Handler};
+use hydrust_sdk::events::Event;
+use hydrust_sdk::metadata::PluginInfo;
 
 #[derive(Default)]
-struct YoutubePlugin;
+struct MyPlugin;
 
-impl Handler for YoutubePlugin {
-    // This function is required
+impl Handler for MyPlugin {
     fn metadata(&self) -> PluginInfo {
         PluginInfo {
-            name: "MyHydrustPlugin".to_string(),
+            name: "My Plugin".to_string(),
             version: "0.1.0".to_string(),
             author: Some("MyName".to_string()),
-            description: Some("My first Hydrust plugin".to_string())
+            description: Some("My plugin does wonders".to_string())
         }
     }
 
-    fn on_event(&self, ev: hydrust_sdk::events::Event) {
-        let _trace_id = ev.id.clone(); // This is required to trace the events across the system
-        
-        if let EventPayload::Core(CoreEvent::IntentResolve(url)) = ev.payload {
-             if url.contains("youtube.com") {
-                 // Logic...
-             }
-        }
+    fn on_event(&self, event: Event) {
+        // Handle event logic here
     }
 }
 
-register_plugin!(YoutubePlugin);
+register_plugin!(MyPlugin);
 ```
 
 ## 🛠 Features Included

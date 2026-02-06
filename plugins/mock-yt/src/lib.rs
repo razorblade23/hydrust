@@ -1,7 +1,7 @@
 use hydrust_sdk::{register_plugin, Handler, events::*, metadata::PluginInfo};
 
 #[derive(Default)]
-struct YoutubePlugin;
+struct MyPlugin;
 
 impl Handler for YoutubePlugin {
     fn metadata(&self) -> PluginInfo {
@@ -16,8 +16,6 @@ impl Handler for YoutubePlugin {
     fn on_event(&self, ev: hydrust_sdk::events::Event) {
         let _trace_id = ev.id.clone();
         
-        // Note: You might need to import EventPayload, CoreEvent explicitly
-        // or access them via ev.payload (if enum variants are imported)
         if let EventPayload::Core(CoreEvent::IntentResolve(url)) = ev.payload {
              if url.contains("youtube.com") {
                  // Logic...
