@@ -5,7 +5,8 @@
 ---
 
 > [!WARNING]
-> **COMPILATION STATUS: STAGE 0** > This project is currently in the architectural drafting phase. The codebase is under active construction and is not yet suitable for production workloads.
+> **COMPILATION STATUS: STAGE 0**
+> This project is currently in the architectural drafting phase. The codebase is under active construction and is not yet suitable for consumption or production workloads.
 
 ---
 
@@ -24,6 +25,14 @@ By decoupling the **Core Engine** (Download/Muxing/DRM) from the **Site Logic** 
 | **Native Pipeline** | `GStreamer` | True native remuxing (HLS/DASH to MP4) without sub-processing. |
 | **Discovery** | `Playwright/Chromium` | Headless manifest sniffing for JS-heavy environments. |
 
+---
+## Documentation
+For full documentation please visit:
+
+[Documentation page](https://razorblade23.github.io/hydrust-docs/)
+
+> ![INFO]
+> If you would like to contribute to our documentation or suggest a fix, please visit: [Documentation repository](https://github.com/razorblade23/hydrust-docs)
 ---
 
 ## 🛠 System Architecture
