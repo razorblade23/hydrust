@@ -17,13 +17,13 @@ pub struct App {
 }
 
 #[derive(Debug)]
-struct PluginList {
+pub struct PluginList {
     items: Vec<Plugin>,
     state: ListState
 }
 
 #[derive(Debug)]
-struct Plugin {
+pub struct Plugin {
     name: String
 }
 
@@ -32,6 +32,14 @@ impl Default for App {
         Self {
             running: true,
             counter: 0,
+            plugins: PluginList {
+                items: vec![
+                    Plugin { name: "Plugin 1".to_string() },
+                    Plugin { name: "Plugin 2".to_string() },
+                    Plugin { name: "Plugin 3".to_string() },
+                ],
+                state: ListState::default()
+            },
             events: EventHandler::new(),
         }
     }

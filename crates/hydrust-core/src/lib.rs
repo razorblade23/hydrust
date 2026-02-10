@@ -25,6 +25,7 @@ impl SiteProviderImports for PluginHost {
 
 impl hydrust::protocol::types::Host for PluginHost {}
 impl hydrust::protocol::events::Host for PluginHost {}
+impl hydrust::protocol::metadata::Host for PluginHost {}
 
 pub fn run_plugin(wasm_bytes: &[u8]) -> wasmtime::Result<()> {
     let mut config = Config::new();
