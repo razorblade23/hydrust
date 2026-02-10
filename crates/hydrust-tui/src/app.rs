@@ -1,3 +1,6 @@
+use hydrust_core::engine::discovery::discover_plugins;
+
+use std::vec;
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::{
     DefaultTerminal,
@@ -11,7 +14,7 @@ pub struct App {
     pub running: bool,
     /// Counter.
     pub counter: u8,
-    pub plugins: PluginList,
+    pub plugins: Vec<Plugin>,
     /// Event handler.
     pub events: EventHandler,
 }
@@ -24,7 +27,7 @@ pub struct PluginList {
 
 #[derive(Debug)]
 pub struct Plugin {
-    name: String
+    pub name: String
 }
 
 impl Default for App {
@@ -32,14 +35,7 @@ impl Default for App {
         Self {
             running: true,
             counter: 0,
-            plugins: PluginList {
-                items: vec![
-                    Plugin { name: "Plugin 1".to_string() },
-                    Plugin { name: "Plugin 2".to_string() },
-                    Plugin { name: "Plugin 3".to_string() },
-                ],
-                state: ListState::default()
-            },
+            plugins: discover_plugins().into_iter().map(|p| Plugin { name: p.name }).collect(),
             events: EventHandler::new(),
         }
     }

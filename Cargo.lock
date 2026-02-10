@@ -1345,6 +1345,7 @@ dependencies = [
  "color-eyre",
  "crossterm",
  "futures",
+ "hydrust-core",
  "ratatui",
  "tokio",
 ]

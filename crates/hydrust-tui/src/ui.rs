@@ -26,7 +26,7 @@ impl Widget for &App {
             .borders(Borders::ALL);
 
         let mut state = ListState::default(); 
-        let items = ["Item 1", "Item 2", "Item 3"];
+        let items = self.plugins.iter().map(|p| p.name.as_str()).collect::<Vec<&str>>();
         let list = List::new(items)
             .style(Style::new().white())
             .highlight_style(Style::new().italic())

@@ -1,3 +1,6 @@
+pub mod engine;
+pub mod services;
+
 // core/src/lib.rs
 use wasmtime::component::*;
 use wasmtime::{Config, Engine, Store};

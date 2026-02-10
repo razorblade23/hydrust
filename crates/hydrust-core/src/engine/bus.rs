@@ -4,31 +4,19 @@
 //! external services, and the internal core engine logic.
 
 use tokio::sync::mpsc;
-use crate::events::{Event, Payload, PluginEvent, CoreEvent, ServiceEvent};
+use crate::hydrust::protocol::events::{ Event, EventPayload, PluginEvent, CoreEvent, ServiceEvent };
+use crate::engine::discovery::{ PluginInfo, discover_plugins };
 use super::HydrustEngine;
-
-/// The central communication hub responsible for routing and dispatching events.
-///
-/// It maintains a receiver channel to process incoming messages and routes them
-/// to the appropriate handler methods on the engine.
-pub struct EventBus {
-    /// The sender half of the event channel.
-    tx: mpsc::Sender<Event>,
-    /// The receiver half of the event channel.
-    rx: mpsc::Receiver<Event>,
-}
 
 /// Events that are restricted to internal core communication.
 ///
 /// These events are used for host-side logic that does not need to be 
 /// exposed to the WebAssembly guest environment or the WIT interface.
 pub enum InternalCoreEvent {
-    /// Triggers database cleanup or optimization routines.
-    DatabaseMaintenance,
-    /// Signals that the engine should refresh its configuration files.
-    ReloadConfig,
-    /// Requests a graceful stop of a specific engine subsystem.
-    ComponentShutdown(String),
+    /// Signals the engine to perform a discovery process for plugins.
+    PluginDiscovery,
+    /// Indicates that the plugin discovery process has completed.
+    PluginDiscoveryComplete(),
 }
 
 /// A wrapper for unifying different event categories into a single stream.
@@ -42,12 +30,24 @@ pub enum BusMessage {
     Internal(InternalCoreEvent),
 }
 
+/// The central communication hub responsible for routing and dispatching events.
+///
+/// It maintains a receiver channel to process incoming messages and routes them
+/// to the appropriate handler methods on the engine.
+pub struct EventBus {
+    /// The sender half of the event channel.
+    tx: mpsc::Sender<BusMessage>,
+    /// The receiver half of the event channel.
+    rx: mpsc::Receiver<BusMessage>,
+}
+
+
 impl EventBus {
     /// Creates a new instance of the EventBus.
     ///
     /// Returns a tuple containing the EventBus itself and a Sender to 
     /// dispatch events into the bus.
-    pub fn new() -> (Self, mpsc::Sender<Event>) {
+    pub fn new() -> (Self, mpsc::Sender<BusMessage>) {
         let (tx, rx) = mpsc::channel(100);
         (Self { tx: tx.clone(), rx }, tx)
     }
@@ -58,12 +58,10 @@ impl EventBus {
     /// based on the payload type (Plugin, Core, or Service).
     async fn handle_external_event(&mut self, engine: &mut HydrustEngine, event: Event) {
         match event.payload {
-            Payload::Plugin(p_ev) => match p_ev {
-                PluginEvent::SomePluginEvent(data) => {
-                    todo!("Handle plugin-specific events if needed")
-                }
+            EventPayload::Plugin(p_ev) => match p_ev {
+                _ => {}
             },
-            Payload::Core(c_ev) => match c_ev {
+            EventPayload::Core(c_ev) => match c_ev {
                 CoreEvent::IntentResolve(url) => {
                     todo!("Handle intent resolution if needed")
                 }
@@ -72,7 +70,7 @@ impl EventBus {
                 }
                 _ => {}
             },
-            Payload::Service(s_ev) => match s_ev {
+            EventPayload::Service(s_ev) => match s_ev {
                 ServiceEvent::MediaProgress(pct) => {
                     todo!("Handle media progress if needed")
                 }
@@ -89,9 +87,16 @@ impl EventBus {
     /// the host engine without involving the guest plugin environment.
     async fn handle_internal_event(&mut self, engine: &mut HydrustEngine, event: InternalCoreEvent) {
         match event {
-            InternalCoreEvent::DatabaseMaintenance => todo!("Perform database cleanup or optimization"),
-            InternalCoreEvent::ReloadConfig => todo!("Reload configuration files or settings"),
-            InternalCoreEvent::ComponentShutdown(name) => todo!("Gracefully shut down the specified component: {}", name),
+            InternalCoreEvent::PluginDiscovery => {
+                let plugins = discover_plugins();
+                log::info!("Discovered {} plugins", plugins.len());
+                for plugin in plugins {
+                    log::info!(" - {} (v{}) by {}", plugin.name, plugin.version, plugin.author);
+                }
+            }
+            InternalCoreEvent::PluginDiscoveryComplete() => {
+                log::info!("Plugin discovery process completed.");
+            }
         }
     }
 
@@ -101,7 +106,7 @@ impl EventBus {
     /// and dispatches them to their respective internal or external handlers.
     pub async fn run(&mut self, engine: &mut HydrustEngine) {
         while let Some(msg) = self.rx.recv().await {
-            log::trace!("[{}] {} -> {:?}", event.id, event.origin, event.payload);
+            // TODO log::trace!("[{}] {} -> {:?}", msg.id, msg.origin, msg.payload);
             
             match msg {
                 BusMessage::External(event) => {

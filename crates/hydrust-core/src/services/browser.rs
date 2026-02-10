@@ -1,4 +1,4 @@
-use crate::events::BrowserRequest;
+use crate::hydrust::protocol::events::BrowserRequest;
 
 // Add Clone!
 #[derive(Clone)]
