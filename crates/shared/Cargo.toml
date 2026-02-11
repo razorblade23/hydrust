@@ -1,0 +1,10 @@
+[package]
+name = "shared"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+uuid = { version = "1.20.0", features = ["v4"] }

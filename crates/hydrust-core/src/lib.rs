@@ -1,63 +1,86 @@
+pub mod bus;
 pub mod engine;
+pub mod host;
 pub mod services;
 
-// core/src/lib.rs
+
 use wasmtime::component::*;
 use wasmtime::{Config, Engine, Store};
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView, ResourceTable};
+use crate::bus::BusMessage;
+use tokio::sync::mpsc;
 
-// Generate bindings with trappable errors
+// Generate bindings
 wasmtime::component::bindgen!({
     path: "../../wit",
     world: "site-provider",
     trappable_error_type: {},
+    async: true, // Required for async_support(true) in Wasmtime 41
 });
 
-pub struct PluginHost;
-
-impl wasmtime::component::HasData for PluginHost {
-    type Data<'a> = &'a mut PluginHost;
+/// The State held by the WASM Host
+pub struct PluginHost {
+    pub ctx: WasiCtx,
+    pub table: ResourceTable,
 }
 
-// Implement the imports - now they return Result
+impl WasiView for PluginHost {
+    fn table(&mut self) -> &mut ResourceTable { &mut self.table }
+    fn ctx(&mut self) -> &mut WasiCtx { &mut self.ctx }
+}
+
+// In Wasmtime 41, async worlds generate async traits
+#[async_trait::async_trait]
 impl SiteProviderImports for PluginHost {
-    fn publish(&mut self, ev: hydrust::protocol::events::Event) -> () {
+    async fn publish(&mut self, ev: hydrust::protocol::events::Event) -> wasmtime::Result<()> {
         println!("Plugin published event: {:?}", ev);
-        ()
+        Ok(())
     }
 }
 
+// These are simple data traits, no async needed here
 impl hydrust::protocol::types::Host for PluginHost {}
 impl hydrust::protocol::events::Host for PluginHost {}
 impl hydrust::protocol::metadata::Host for PluginHost {}
 
-pub fn run_plugin(wasm_bytes: &[u8]) -> wasmtime::Result<()> {
+pub struct PluginInstance {
+    pub plugin: engine::discovery::PluginInfo,
+}
+
+pub async fn load_plugin_metadata(wasm_bytes: &[u8]) -> wasmtime::Result<hydrust::protocol::metadata::PluginInfo> {
     let mut config = Config::new();
     config.wasm_component_model(true);
+    config.async_support(true); 
+
+    let engine = Engine::new(&config)?;
+    let component = Component::from_binary(&engine, wasm_bytes)?;
     
-    let engine: Engine = Engine::new(&config)?;
-    let component: Component = Component::from_binary(&engine, wasm_bytes)?;
-    
+    // Explicitly type the linker to help the compiler resolve the 'state' closure
     let mut linker: Linker<PluginHost> = Linker::new(&engine);
-    SiteProvider::add_to_linker::<PluginHost, PluginHost>(
-        &mut linker, 
-        |state| state
-    )?;
+
+    // 1. Link WASI (Preview 2 is standard in 41.x)
+    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+
+    // 2. Link your custom world. 
+    // We remove the explicit type on 'state' to avoid the HasData conflict
+    SiteProvider::add_to_linker(&mut linker, |s| s)?;
+
+    // 3. Setup the context
+    let wasi_ctx = WasiCtxBuilder::new()
+        .inherit_stdio()
+        .inherit_env()
+        .build();
+
+    let mut store = Store::new(&engine, PluginHost {
+        ctx: wasi_ctx,
+        table: ResourceTable::new(),
+    });
     
-    let mut store = Store::new(&engine, PluginHost);
-    let instance = SiteProvider::instantiate(&mut store, &component, &linker)?;
+    // 4. Instantiate and Call (Note the .await on BOTH calls)
+    let (instance, _) = SiteProvider::instantiate_async(&mut store, &component, &linker).await?;
     
-    let test_event = hydrust::protocol::events::Event {
-        id: "test-123".to_string(),
-        origin: "core".to_string(),
-        timestamp: 0,
-        payload: hydrust::protocol::events::EventPayload::Core(
-            hydrust::protocol::events::CoreEvent::IntentResolve(
-                "https://youtube.com/watch?v=test".to_string()
-            )
-        ),
-    };
+    // Call get-info() - this is now an async call because of bindgen! settings
+    let info = instance.call_get_info(&mut store).await?;
     
-    instance.call_on_event(&mut store, &test_event)?;
-    
-    Ok(())
+    Ok(info)
 }

@@ -2,14 +2,13 @@ use std::collections::HashMap;
 use tokio::sync::mpsc;
 
 // 1. Declare sub-modules
-pub mod bus;
-pub mod host;
-pub mod state_machine;
 pub mod discovery;
+pub mod state_machine;
 
-use crate::hydrust::protocol::events::{Event, CoreEvent, BrowserRequest, StreamInfo};
-use crate::services::browser::BrowserService;
 use self::state_machine::{DownloadTask, TaskState}; // Import the missing types
+use crate::bus::{ BusMessage, InternalCoreEvent };
+use crate::hydrust::protocol::events::BrowserRequest;
+use crate::services::browser::BrowserService;
 
 pub struct LoadedPlugin {
     pub id: String,
@@ -17,16 +16,16 @@ pub struct LoadedPlugin {
 
 pub struct HydrustEngine {
     active_tasks: HashMap<String, DownloadTask>,
-    plugins: Vec<LoadedPlugin>,
-    bus_tx: mpsc::Sender<Event>,
+    plugins: Vec<discovery::PluginInfo>,
+    bus_tx: mpsc::Sender<BusMessage>,
     browser: BrowserService,
 }
 
 impl HydrustEngine {
-    pub fn new(bus_tx: mpsc::Sender<Event>) -> Self {
+    pub fn new(bus_tx: mpsc::Sender<BusMessage>) -> Self {
         Self {
             active_tasks: HashMap::new(),
-            plugins: Vec::new(),
+            plugins: vec![],
             bus_tx,
             browser: BrowserService::new(),
         }
@@ -35,13 +34,13 @@ impl HydrustEngine {
     // --- HANDLERS ---
 
     pub async fn handle_plugin_discovery(&mut self) {
-        println!("Starting plugin discovery...");
-        let plugins = discovery::discover_plugins();
-        println!("Discovered {} plugins.", plugins.len());
-        for p in plugins {
-            println!("   - {} v{} by {}", p.name, p.version, p.author);
-            self.plugins.push(LoadedPlugin { id: p.id });
-        }
+        // Run the real scan
+        let discovered = discovery::scan_plugins_folder().await;
+        
+        // Notify the bus (and TUI)
+        let _ = self.bus_tx.send(BusMessage::Internal(
+            InternalCoreEvent::PluginDiscoveryComplete(discovered)
+        )).await;
     }
 
     pub async fn handle_browser_request(&mut self, trace_id: String, req: BrowserRequest) {
@@ -50,8 +49,8 @@ impl HydrustEngine {
         }
 
         // let tx = self.bus_tx.clone();
-        // let mut browser = self.browser.clone(); 
-        
+        // let mut browser = self.browser.clone();
+
         // tokio::spawn(async move {
         //     match browser.sniff(req).await {
         //         Ok(sniffed_data) => {

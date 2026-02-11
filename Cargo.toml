@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "crates/hydrust-tui",
     "crates/hydrust-core",
-    "crates/hydrust-sdk",
+    "crates/hydrust-sdk", "crates/shared",
 ]
 exclude = ["plugins/mock-provider", "plugins/mock-yt"]
 
@@ -21,8 +21,7 @@ tokio = { version = "1.35", features = ["full"] }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-wasmtime = { version = "41.0", features = ["component-model", "async"] }
-wit-bindgen = { version = "0.51.0", features = ["realloc"]}
+wit-bindgen = { version = "0.52.0", features = ["realloc"]}
 log = "0.4"
 
 [profile.release]

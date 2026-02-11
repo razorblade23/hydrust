@@ -1,8 +1,9 @@
 use color_eyre::eyre::OptionExt;
 use futures::{FutureExt, StreamExt};
 use ratatui::crossterm::event::Event as CrosstermEvent;
+use hydrust_core::bus::BusMessage;
+use tokio::sync::{mpsc, broadcast};
 use std::time::Duration;
-use tokio::sync::mpsc;
 
 /// The frequency at which tick events are emitted.
 const TICK_FPS: f64 = 30.0;
@@ -24,6 +25,8 @@ pub enum Event {
     ///
     /// Use this event to emit custom events that are specific to your application.
     App(AppEvent),
+    /// Events from the bus
+    Bus(BusMessage),
 }
 
 /// Application events.
@@ -31,6 +34,7 @@ pub enum Event {
 /// You can extend this enum with your own custom events.
 #[derive(Clone, Debug)]
 pub enum AppEvent {
+    DiscoverPlugins,
     /// Increment the counter.
     Increment,
     /// Decrement the counter.
@@ -50,9 +54,9 @@ pub struct EventHandler {
 
 impl EventHandler {
     /// Constructs a new instance of [`EventHandler`] and spawns a new thread to handle events.
-    pub fn new() -> Self {
+    pub fn new(mut bus_rx: broadcast::Receiver<BusMessage>) -> Self {
         let (sender, receiver) = mpsc::unbounded_channel();
-        let actor = EventTask::new(sender.clone());
+        let actor = EventTask::new(sender.clone(), bus_rx);
         tokio::spawn(async { actor.run().await });
         Self { sender, receiver }
     }
@@ -88,34 +92,39 @@ impl EventHandler {
 struct EventTask {
     /// Event sender channel.
     sender: mpsc::UnboundedSender<Event>,
+    bus_rx: broadcast::Receiver<BusMessage>,
 }
 
 impl EventTask {
     /// Constructs a new instance of [`EventThread`].
-    fn new(sender: mpsc::UnboundedSender<Event>) -> Self {
-        Self { sender }
+    fn new(sender: mpsc::UnboundedSender<Event>, bus_rx: broadcast::Receiver<BusMessage>) -> Self {
+        Self { sender, bus_rx }
     }
 
     /// Runs the event thread.
     ///
     /// This function emits tick events at a fixed rate and polls for crossterm events in between.
-    async fn run(self) -> color_eyre::Result<()> {
-        let tick_rate = Duration::from_secs_f64(1.0 / TICK_FPS);
+    async fn run(mut self) -> color_eyre::Result<()> {
+        let tick_rate = std::time::Duration::from_secs_f64(1.0 / TICK_FPS);
         let mut reader = crossterm::event::EventStream::new();
         let mut tick = tokio::time::interval(tick_rate);
+
         loop {
-            let tick_delay = tick.tick();
-            let crossterm_event = reader.next().fuse();
             tokio::select! {
-              _ = self.sender.closed() => {
-                break;
-              }
-              _ = tick_delay => {
-                self.send(Event::Tick);
-              }
-              Some(Ok(evt)) = crossterm_event => {
-                self.send(Event::Crossterm(evt));
-              }
+                _ = self.sender.closed() => break,
+                
+                // 1. Regular Ticks
+                _ = tick.tick() => { let _ = self.sender.send(Event::Tick); }
+                
+                // 2. Keyboard/Mouse
+                Some(Ok(evt)) = reader.next().fuse() => {
+                    let _ = self.sender.send(Event::Crossterm(evt));
+                }
+                
+                // 3. NEW: Listen to the Hydrust Engine!
+                Ok(bus_msg) = self.bus_rx.recv() => {
+                    let _ = self.sender.send(Event::Bus(bus_msg));
+                }
             };
         }
         Ok(())

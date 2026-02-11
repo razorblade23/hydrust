@@ -1,5 +1,8 @@
 use ratatui::{
-    buffer::Buffer, layout::{Constraint, Direction, Layout, Rect}, style::Style, widgets::{Block, Borders, List, ListDirection, ListState, Paragraph, Widget}
+    buffer::Buffer,
+    layout::{Constraint, Direction, Layout, Rect},
+    style::Style,
+    widgets::{Block, Borders, List, ListDirection, ListState, Paragraph, Widget},
 };
 
 use crate::app::App;
@@ -19,14 +22,18 @@ impl Widget for &App {
             .split(chunks[0]);
 
         // 3. Define the Widgets
-        let left_panel = Block::default().title("Incoming events").borders(Borders::ALL);
-        let main_panel = Block::default().title("Active tasks").borders(Borders::ALL);
-        let bottom_panel = Block::default()
-            .title("Command bar")
+        let left_panel = Block::default()
+            .title("Incoming events")
             .borders(Borders::ALL);
+        let main_panel = Block::default().title("Active tasks").borders(Borders::ALL);
+        let bottom_panel = Block::default().title("Command bar").borders(Borders::ALL);
 
-        let mut state = ListState::default(); 
-        let items = self.plugins.iter().map(|p| p.name.as_str()).collect::<Vec<&str>>();
+        let mut state = ListState::default();
+        let items = self
+            .plugins
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect::<Vec<&str>>();
         let list = List::new(items)
             .style(Style::new().white())
             .highlight_style(Style::new().italic())

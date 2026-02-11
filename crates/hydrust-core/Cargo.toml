@@ -4,10 +4,11 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+shared = { path = "../shared" }
 tokio.workspace = true
-wasmtime.workspace = true
 anyhow.workspace = true
 log.workspace = true
+wasmtime = { version = "41.0", features = ["component-model", "async"] }
 wasmtime-wasi = "41.0.1"
 
 # Media handling
