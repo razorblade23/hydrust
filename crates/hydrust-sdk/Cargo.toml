@@ -13,11 +13,12 @@ license = "MIT"
 include = ["src/**/*", "wit/**/*", "build.rs", "Cargo.toml"]
 
 [dependencies]
-wit-bindgen = "0.52.0"
+wit-bindgen = "0.53.0"
 serde = { version = "1.0", features = ["derive"] }
 # We use 'scraper' for HTML parsing inside WASM
 scraper = "0.25"
 
 [build-dependencies]
-# Used to copy files during build
+reqwest = { version = "0.13", features = ["blocking"] }
+anyhow = "1.0"
 fs_extra = "1.3"

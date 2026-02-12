@@ -65,6 +65,7 @@ pub mod bindings {
         world: "site-provider",
         runtime_path: "crate::rt",
         pub_export_macro: true,
+        generate_all,
     });
 }
 

@@ -83,6 +83,9 @@ interface metadata {
 }
 
 world site-provider {
+    import wasi:io/poll@0.2.8;
+    import wasi:clocks/wall-clock@0.2.8;
+
     use metadata.{plugin-info};
     use events.{event};
 
